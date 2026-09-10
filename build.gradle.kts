@@ -52,7 +52,7 @@ val apiCode by extra(93)
 val verCode by extra(commitCount + 4200)
 val verName by extra("1.8.4")
 val androidTargetSdkVersion by extra(33)
-val androidMinSdkVersion by extra(27)
+val androidMinSdkVersion by extra(26)
 val androidBuildToolsVersion by extra("32.0.0")
 val androidCompileSdkVersion by extra(33)
 val androidCompileNdkVersion by extra("25.1.8937393")
@@ -94,7 +94,7 @@ fun Project.configureBaseExtension() {
             externalNativeBuild {
                 cmake {
                     arguments += "-DEXTERNAL_ROOT=${File(rootDir.absolutePath, "external")}"
-                    arguments += "-DCORE_ROOT=${File(rootDir.absolutePath, "core/src/main/jni")}"
+                    arguments += "-DCORE_ROOT=${File(rootDir.absolutePath, "core/src/main/jni")}" 
                     abiFilters("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
                     val flags = arrayOf(
                         "-Wall",
