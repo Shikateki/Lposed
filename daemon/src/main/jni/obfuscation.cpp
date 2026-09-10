@@ -189,6 +189,16 @@ JNIEXPORT jobject
 Java_com_posed_lspd_service_ObfuscationManager_obfuscateDex(JNIEnv *env, [[maybe_unused]] jclass obfuscation_manager,
                                                        jobject memory) {
     maybeInit(env);
+
+    // ASharedMemory_dupFromJava() was introduced in API 27. Keep the
+    // API-26 build valid by guarding the call; on Android 8.0 obfuscation
+    // is unavailable and the caller receives null instead of invoking an
+    // API-27-only NDK symbol.
+    if (!__builtin_available(android 27, *)) {
+        LOGD("Dex obfuscation requires Android 8.1 (API 27+)");
+        return nullptr;
+    }
+
     int fd = ASharedMemory_dupFromJava(env, memory);
     auto size = ASharedMemory_getSize(fd);
     LOGD("fd=%d, size=%zu", fd, size);
