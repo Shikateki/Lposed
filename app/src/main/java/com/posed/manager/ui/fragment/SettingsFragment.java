@@ -53,11 +53,11 @@ import androidx.annotation.Nullable;
 import androidx.core.text.HtmlCompat;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
+import androidx.preference.SwitchPreferenceCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import rikka.core.util.ResourceUtils;
 import rikka.material.app.DayNightDelegate;
 import rikka.material.app.LocaleDelegate;
-import rikka.material.preference.MaterialSwitchPreference;
 import rikka.preference.SimpleMenuPreference;
 import rikka.recyclerview.RecyclerViewKt;
 import rikka.widget.borderview.BorderRecyclerView;
@@ -89,7 +89,6 @@ public class SettingsFragment extends BaseFragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-
         binding = null;
     }
 
@@ -124,25 +123,22 @@ public class SettingsFragment extends BaseFragment {
         @Override
         public void onAttach(@NonNull Context context) {
             super.onAttach(context);
-
             parentFragment = (SettingsFragment) requireParentFragment();
         }
 
         @Override
         public void onDetach() {
             super.onDetach();
-
             parentFragment = null;
         }
 
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             final String SYSTEM = "SYSTEM";
-
             addPreferencesFromResource(R.xml.prefs);
 
             boolean installed = ConfigManager.isBinderAlive();
-            MaterialSwitchPreference prefVerboseLogs = findPreference("disable_verbose_log");
+            SwitchPreferenceCompat prefVerboseLogs = findPreference("disable_verbose_log");
             if (prefVerboseLogs != null) {
                 prefVerboseLogs.setEnabled(!BuildConfig.DEBUG && installed);
                 prefVerboseLogs.setChecked(!installed || !ConfigManager.isVerboseLogEnabled());
@@ -150,7 +146,7 @@ public class SettingsFragment extends BaseFragment {
                         ConfigManager.setVerboseLogEnabled(!(boolean) newValue));
             }
 
-            MaterialSwitchPreference prefDexObfuscate = findPreference("enable_dex_obfuscate");
+            SwitchPreferenceCompat prefDexObfuscate = findPreference("enable_dex_obfuscate");
             if (prefDexObfuscate != null) {
                 prefDexObfuscate.setEnabled(installed);
                 prefDexObfuscate.setChecked(!installed || ConfigManager.isDexObfuscateEnabled());
@@ -161,7 +157,7 @@ public class SettingsFragment extends BaseFragment {
                 });
             }
 
-            MaterialSwitchPreference prefEnableShortcut = findPreference("enable_auto_add_shortcut");
+            SwitchPreferenceCompat prefEnableShortcut = findPreference("enable_auto_add_shortcut");
             if (prefEnableShortcut != null) {
                 prefEnableShortcut.setEnabled(installed);
                 prefEnableShortcut.setVisible(!App.isParasitic());
@@ -187,8 +183,7 @@ public class SettingsFragment extends BaseFragment {
                 backup.setOnPreferenceClickListener(preference -> {
                     LocalDateTime now = LocalDateTime.now();
                     try {
-                        backupLauncher.launch(String.format(LocaleDelegate.getDefaultLocale(),
-                                "FunXP_%s.lsp", now.toString()));
+                        backupLauncher.launch(String.format(LocaleDelegate.getDefaultLocale(), "FunXP_%s.lsp", now.toString()));
                         return true;
                     } catch (ActivityNotFoundException e) {
                         parentFragment.showHint(R.string.enable_documentui, true);
@@ -217,9 +212,7 @@ public class SettingsFragment extends BaseFragment {
                     if (!App.getPreferences().getString("dark_theme", ThemeUtil.MODE_NIGHT_FOLLOW_SYSTEM).equals(newValue)) {
                         DayNightDelegate.setDefaultNightMode(ThemeUtil.getDarkTheme((String) newValue));
                         MainActivity activity = (MainActivity) getActivity();
-                        if (activity != null) {
-                            activity.restart();
-                        }
+                        if (activity != null) activity.restart();
                     }
                     return true;
                 });
@@ -229,9 +222,7 @@ public class SettingsFragment extends BaseFragment {
             if (black_dark_theme != null) {
                 black_dark_theme.setOnPreferenceChangeListener((preference, newValue) -> {
                     MainActivity activity = (MainActivity) getActivity();
-                    if (activity != null && ResourceUtils.isNightMode(getResources().getConfiguration())) {
-                        activity.restart();
-                    }
+                    if (activity != null && ResourceUtils.isNightMode(getResources().getConfiguration())) activity.restart();
                     return true;
                 });
             }
@@ -240,35 +231,27 @@ public class SettingsFragment extends BaseFragment {
             if (primary_color != null) {
                 primary_color.setOnPreferenceChangeListener((preference, newValue) -> {
                     MainActivity activity = (MainActivity) getActivity();
-                    if (activity != null) {
-                        activity.restart();
-                    }
+                    if (activity != null) activity.restart();
                     return true;
                 });
             }
 
-            MaterialSwitchPreference prefShowHiddenIcons = findPreference("show_hidden_icon_apps_enabled");
+            SwitchPreferenceCompat prefShowHiddenIcons = findPreference("show_hidden_icon_apps_enabled");
             if (prefShowHiddenIcons != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 if (ConfigManager.isBinderAlive()) {
                     prefShowHiddenIcons.setEnabled(true);
-                    prefShowHiddenIcons.setOnPreferenceChangeListener((preference, newValue) ->
-                            ConfigManager.setHiddenIcon(!(boolean) newValue));
+                    prefShowHiddenIcons.setOnPreferenceChangeListener((preference, newValue) -> ConfigManager.setHiddenIcon(!(boolean) newValue));
                 }
-                prefShowHiddenIcons.setChecked(Settings.Global.getInt(
-                        requireActivity().getContentResolver(), "show_hidden_icon_apps_enabled", 1) != 0);
+                prefShowHiddenIcons.setChecked(Settings.Global.getInt(requireActivity().getContentResolver(), "show_hidden_icon_apps_enabled", 1) != 0);
             }
 
-            MaterialSwitchPreference prefFollowSystemAccent = findPreference("follow_system_accent");
+            SwitchPreferenceCompat prefFollowSystemAccent = findPreference("follow_system_accent");
             if (prefFollowSystemAccent != null && DynamicColors.isDynamicColorAvailable()) {
-                if (primary_color != null) {
-                    primary_color.setVisible(!prefFollowSystemAccent.isChecked());
-                }
+                if (primary_color != null) primary_color.setVisible(!prefFollowSystemAccent.isChecked());
                 prefFollowSystemAccent.setVisible(true);
                 prefFollowSystemAccent.setOnPreferenceChangeListener((preference, newValue) -> {
                     MainActivity activity = (MainActivity) getActivity();
-                    if (activity != null) {
-                        activity.restart();
-                    }
+                    if (activity != null) activity.restart();
                     return true;
                 });
             }
@@ -289,9 +272,8 @@ public class SettingsFragment extends BaseFragment {
                 }
                 language.setEntries(entries.toArray(new CharSequence[0]));
                 language.setEntryValues(lstLang);
-                if (TextUtils.isEmpty(tag) || SYSTEM.equals(tag)) {
-                    language.setSummary(getString(rikka.core.R.string.follow_system));
-                } else {
+                if (TextUtils.isEmpty(tag) || SYSTEM.equals(tag)) language.setSummary(getString(rikka.core.R.string.follow_system));
+                else {
                     var locale = Locale.forLanguageTag(tag);
                     language.setSummary(!TextUtils.isEmpty(locale.getScript()) ? locale.getDisplayScript(userLocale) : locale.getDisplayName(userLocale));
                 }
@@ -302,12 +284,9 @@ public class SettingsFragment extends BaseFragment {
                     var config = res.getConfiguration();
                     config.setLocale(locale);
                     LocaleDelegate.setDefaultLocale(locale);
-                    //noinspection deprecation
                     res.updateConfiguration(config, res.getDisplayMetrics());
                     MainActivity activity = (MainActivity) getActivity();
-                    if (activity != null) {
-                        activity.restart();
-                    }
+                    if (activity != null) activity.restart();
                     return true;
                 });
             }
@@ -324,11 +303,8 @@ public class SettingsFragment extends BaseFragment {
             Preference translation_contributors = findPreference("translation_contributors");
             if (translation_contributors != null) {
                 var translators = HtmlCompat.fromHtml(getString(R.string.translators), HtmlCompat.FROM_HTML_MODE_LEGACY);
-                if (translators.toString().equals("null")) {
-                    translation_contributors.setVisible(false);
-                } else {
-                    translation_contributors.setSummary(translators);
-                }
+                if (translators.toString().equals("null")) translation_contributors.setVisible(false);
+                else translation_contributors.setSummary(translators);
             }
         }
 
