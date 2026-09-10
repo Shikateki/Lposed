@@ -50,8 +50,8 @@ require_new_android() {
 }
 
 check_android_version() {
-  if [ "$API" -ge 27 ]; then
-    ui_print "- Android SDK version: $API"
+  if [ "$API" -ge 26 ]; then
+    ui_print "- Android SDK version: $API (API 26 compatibility build)"
   else
     require_new_android "$API"
   fi
