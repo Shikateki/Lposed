@@ -74,11 +74,13 @@ void maybeInit(JNIEnv *env) {
 
     method_file_descriptor_ctor = JNI_GetMethodID(env, class_file_descriptor, "<init>", "(I)V");
 
+#if __ANDROID_API__ >= 27
     if (auto shared_memory = JNI_FindClass(env, "android/os/SharedMemory")) {
         class_shared_memory = JNI_NewGlobalRef(env, shared_memory);
     } else return;
 
     method_shared_memory_ctor = JNI_GetMethodID(env, class_shared_memory, "<init>", "(Ljava/io/FileDescriptor;)V");
+#endif
 
     auto regen = [](std::string_view original_signature) {
         static auto& chrs = "abcdefghijklmnopqrstuvwxyz"
@@ -94,10 +96,10 @@ void maybeInit(JNIEnv *env) {
         out += "L";
 
         for (size_t i = 1; i < length - 1; i++) {
-            if (choose_slash(rg) > 8 &&                         // 80% alphabet + 20% slashes
-                out[i - 1] != '/' &&                                // slashes could not stick together
-                i != 1 &&                                           // the first character should not be slash
-                i != length - 2) {                                  // and the last character
+            if (choose_slash(rg) > 8 &&
+                out[i - 1] != '/' &&
+                i != 1 &&
+                i != length - 2) {
                 out += "/";
             } else {
                 out += chrs[pick(rg)];
@@ -160,7 +162,6 @@ Java_com_posed_lspd_service_ObfuscationManager_getSignatures(JNIEnv *env, [[mayb
 }
 
 static int obfuscateDex(const void *dex, size_t size) {
-    // const char* new_sig = obfuscated_signature.c_str();
     dex::Reader reader{reinterpret_cast<const dex::u1*>(dex), size};
 
     reader.CreateFullIr();
@@ -171,7 +172,6 @@ static int obfuscateDex(const void *dex, size_t size) {
             char* p = const_cast<char *>(strstr(s, signature.first.c_str()));
             if (p) {
                 auto new_sig = signature.second.c_str();
-                // NOLINTNEXTLINE bugprone-not-null-terminated-result
                 memcpy(p, new_sig, strlen(new_sig));
             }
         }
@@ -180,7 +180,7 @@ static int obfuscateDex(const void *dex, size_t size) {
 
     size_t new_size;
     WA allocator;
-    auto *p_dex = writer.CreateImage(&allocator, &new_size);  // allocates memory only once
+    auto *p_dex = writer.CreateImage(&allocator, &new_size);
     return allocator.GetFd(p_dex);
 }
 
@@ -188,16 +188,13 @@ extern "C"
 JNIEXPORT jobject
 Java_com_posed_lspd_service_ObfuscationManager_obfuscateDex(JNIEnv *env, [[maybe_unused]] jclass obfuscation_manager,
                                                        jobject memory) {
+#if __ANDROID_API__ < 27
+    (void) env;
+    (void) memory;
+    LOGD("Dex obfuscation requires Android 8.1 (API 27+)");
+    return nullptr;
+#else
     maybeInit(env);
-
-    // ASharedMemory_dupFromJava() was introduced in API 27. Keep the
-    // API-26 build valid by guarding the call; on Android 8.0 obfuscation
-    // is unavailable and the caller receives null instead of invoking an
-    // API-27-only NDK symbol.
-    if (!__builtin_available(android 27, *)) {
-        LOGD("Dex obfuscation requires Android 8.1 (API 27+)");
-        return nullptr;
-    }
 
     int fd = ASharedMemory_dupFromJava(env, memory);
     auto size = ASharedMemory_getSize(fd);
@@ -211,9 +208,9 @@ Java_com_posed_lspd_service_ObfuscationManager_obfuscateDex(JNIEnv *env, [[maybe
 
     auto new_fd = obfuscateDex(mem, size);
 
-    // construct new shared mem with fd
     auto java_fd = JNI_NewObject(env, class_file_descriptor, method_file_descriptor_ctor, new_fd);
     auto java_sm = JNI_NewObject(env, class_shared_memory, method_shared_memory_ctor, java_fd);
 
     return java_sm.release();
+#endif
 }
